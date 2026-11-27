@@ -1,0 +1,9 @@
+/build/
+/.mygo/
+/sources-export.json
+library.json
+library-*.json
+.env
+*.keystore
+*.jks
+mygo_windows_*.syso
