@@ -1,7 +1,7 @@
 {
   "name": "mai comic",
   "identifier": "com.example.mygomanga",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "out": "build",
   "ios": { "minimumSystemVersion": "17.0" },
   "android": { "minSdk": 26 }

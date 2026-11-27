@@ -148,6 +148,7 @@ const (
 	searchSection catalogSection = iota
 	favoritesSection
 	historySection
+	copyMangaRankSection
 )
 
 func (s catalogSection) title() string {
@@ -156,6 +157,8 @@ func (s catalogSection) title() string {
 		return "收藏"
 	case historySection:
 		return "阅读历史"
+	case copyMangaRankSection:
+		return "男频榜"
 	default:
 		return "搜索"
 	}
@@ -164,6 +167,9 @@ func (s catalogSection) title() string {
 func (a *app) navigate(section catalogSection) {
 	a.backToCatalog()
 	a.section = section
+	if section == copyMangaRankSection {
+		a.selectCopyMangaRank(a.copyRank.period)
+	}
 }
 
 func (a *app) catalogHeader(c *ui.Context) {
@@ -197,11 +203,13 @@ func (a *app) brandView(c *ui.Context) ui.Element {
 }
 
 func (a *app) catalogNav(c *ui.Context, compact bool) {
-	ui.Row(c).Gap(6).Children(func() {
-		order := []catalogSection{searchSection, favoritesSection, historySection}
-		if compact {
-			order = []catalogSection{historySection, favoritesSection, searchSection}
-		}
+	columns := 2
+	order := []catalogSection{searchSection, copyMangaRankSection, favoritesSection, historySection}
+	if compact {
+		columns = 4
+		order = []catalogSection{historySection, favoritesSection, searchSection, copyMangaRankSection}
+	}
+	ui.Grid(c).Columns(columns).Gap(6).Children(func() {
 		for _, section := range order {
 			label := section.title()
 			if compact && section == historySection {
@@ -210,9 +218,9 @@ func (a *app) catalogNav(c *ui.Context, compact bool) {
 				label = "找漫画"
 			}
 			if a.section == section {
-				ui.PrimaryButton(c, label).Grow(1).OnClick(func() { a.navigate(section) })
+				ui.PrimaryButton(c, label).OnClick(func() { a.navigate(section) })
 			} else {
-				ui.Button(c, label).Grow(1).OnClick(func() { a.navigate(section) })
+				ui.Button(c, label).OnClick(func() { a.navigate(section) })
 			}
 		}
 	})

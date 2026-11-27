@@ -46,6 +46,7 @@ type app struct {
 	sourceID          string
 	results           []searchMatch
 	searched          bool
+	copyRank          copyMangaRankState
 	comicSource       string
 	comic             item
 	detail            item
@@ -199,6 +200,8 @@ func (a *app) content(c *ui.Context, compact bool) {
 	switch {
 	case a.comic.URL != "":
 		a.chapterView(c, compact)
+	case a.section == copyMangaRankSection:
+		a.copyMangaRankView(c, compact)
 	case a.section != searchSection:
 		a.libraryView(c, compact)
 	default:
@@ -388,7 +391,11 @@ func (a *app) searchView(c *ui.Context, compact bool) {
 		ui.Text(c, message).Wrap().TextColor(c.Theme().TextMuted).Padding(5, horizontal)
 		return
 	}
-	ui.List(c, nil, len(results), func(i int) {
+	a.searchResultList(c, results, horizontal, nil, false)
+}
+
+func (a *app) searchResultList(c *ui.Context, results []searchMatch, horizontal float32, state *ui.ListState, ranked bool) {
+	ui.List(c, state, len(results), func(i int) {
 		result := results[i]
 		comic := result.Item
 		comic.Cover = a.coverForComic(result.SourceID, comic)
@@ -401,6 +408,9 @@ func (a *app) searchView(c *ui.Context, compact bool) {
 			Radius(8).Background(theme.Surface).Border(1, theme.Border).Cursor(ui.CursorPointer).
 			OnClick(func() { a.openComic(comic, result.SourceID, nil) }).Children(func() {
 			ui.Row(c).WidthPercent(100).AlignItems(ui.Center).Gap(12).Children(func() {
+				if ranked {
+					ui.Textf(c, "%d", i+1).Bold().TextColor(theme.TextMuted).Width(24).Shrink(0).TextAlign(ui.Center)
+				}
 				ui.Box(c).Size(54, 76).Shrink(0).Radius(5).Clip().Background(theme.Border).
 					Children(func() { comicCoverView(c, comic, 180) })
 				ui.Column(c).Grow(1).Basis(0).Gap(4).Children(func() {
@@ -422,7 +432,11 @@ func (a *app) chapterView(c *ui.Context, compact bool) {
 	}
 	ui.Column(c).Shrink(0).Padding(23, horizontal, 16).Gap(10).Children(func() {
 		ui.Row(c).AlignItems(ui.Center).Gap(8).Children(func() {
-			ui.Button(c, "返回"+a.section.title()).OnClick(a.backToCatalog)
+			backLabel := "返回" + a.section.title()
+			if a.section == copyMangaRankSection {
+				backLabel = "返回榜单"
+			}
+			ui.Button(c, backLabel).OnClick(a.backToCatalog)
 			ui.Box(c).Grow(1)
 			label := "收藏漫画"
 			if a.library.favoriteIndex(a.comicSource, a.comic.URL) >= 0 {

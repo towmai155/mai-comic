@@ -35,25 +35,32 @@ var (
 
 func searchCopyManga(ctx context.Context, client *http.Client, query string) ([]item, error) {
 	params := url.Values{"q": {query}, "q_type": {""}, "platform": {"2"}, "limit": {"12"}, "offset": {"0"}}
-	path := "/api/kb/web/searchcl/comics?" + params.Encode()
+	body, final, err := fetchCopyMangaWeb(ctx, client, "/api/kb/web/searchcl/comics?"+params.Encode())
+	if err != nil {
+		return nil, err
+	}
+	return parseCopyMangaSearch(body, final)
+}
+
+func fetchCopyMangaWeb(ctx context.Context, client *http.Client, path string) ([]byte, *url.URL, error) {
 	for _, origin := range []string{copyMangaOrigin, copyMangaAlternateOrigin} {
 		target, _ := url.Parse(origin + path)
 		body, final, err := fetch(ctx, client, target, 2<<20)
 		if err == nil {
 			if !copyMangaWebsite(final) {
-				return nil, errors.New("搜索请求跳转到了未知站点")
+				return nil, nil, errors.New("拷贝漫画请求跳转到了未知站点")
 			}
-			return parseCopyMangaSearch(body, final)
+			return body, final, nil
 		}
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return nil, nil, ctx.Err()
 		}
 		var connectionError *url.Error
 		if !errors.As(err, &connectionError) {
-			return nil, err
+			return nil, nil, err
 		}
 	}
-	return nil, errors.New("搜索连接失败，请切换网络后重试")
+	return nil, nil, errors.New("连接失败，请切换网络后重试")
 }
 
 func parseCopyMangaSearch(body []byte, responseURL *url.URL) ([]item, error) {
